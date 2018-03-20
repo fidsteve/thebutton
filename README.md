@@ -1,8 +1,8 @@
-#The Button
+# The Button
 
 
 
-###Design Assumptions & Considerations
+### Design Assumptions & Considerations
 * The creator of the contract will send payment upon creation. This will:
 	* set the value that must be included with each call to `pressButton`
 	* act as the first "press" of the button
@@ -11,7 +11,7 @@
 * A *helper* contract was created to facilitate development & testing.  Specifically, for creating additional blocks so that `claimTreasure` could be called sucessfully.
 	
 		
-###Manual Testing Procedure
+### Manual Testing Procedure
 
 Caveat: for ease the contract was tested in Remix
 
@@ -37,7 +37,7 @@ Caveat: for ease the contract was tested in Remix
 
  > Expected Result: ether for this address increases by 4 
 
-###Unit Tests 
+### Unit Tests 
 to run, use: `truffle test`
 
 1. a new contract should have the expected initial balance 
