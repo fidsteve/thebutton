@@ -87,13 +87,13 @@ contract('TheButton', (accounts) => {
 
     // to make this code more maintainable, there are two negation tests and one affirmation  test
     it('a new, pressed contract, can only be claimed by the last pressor, after three blocks have been mined', async () => {
-      const the_button = await TheButton.new({ from: accounts[0], value:web3.toWei(1, "ether") });
+      const the_button = await TheButton.new({ from: accounts[0], value:web3.toWei(1, "ether") }); //treasure = 1
       const the_button_helper = await TestTheButtonHelper.new({ from: accounts[0]});
 
-      the_button.pressButton({ from: accounts[1], value:web3.toWei(1, "ether"), gas:500000 });
+      await the_button.pressButton({ from: accounts[1], value:web3.toWei(1, "ether"), gas:500000 }); //treasure = 2
+      await the_button.pressButton({ from: accounts[1], value:web3.toWei(1, "ether"), gas:500000 }); //treasure = 3
+      await the_button.pressButton({ from: accounts[2], value:web3.toWei(1, "ether"), gas:500000 }); //treasure = 4
 
-      await the_button.pressButton({ from: accounts[1], value:web3.toWei(1, "ether"), gas:500000 });
-      await the_button.pressButton({ from: accounts[2], value:web3.toWei(1, "ether"), gas:500000 });
       await the_button_helper.incrementBlock(); // block 1
       await the_button_helper.incrementBlock(); // block 2
 
