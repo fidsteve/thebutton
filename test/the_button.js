@@ -1,6 +1,32 @@
 const TheButton = artifacts.require("./TheButton.sol");
 const TestTheButtonHelper = artifacts.require("./TestTheButtonHelper.sol");
 
+
+async function catchErrorString (fn, fn_arg, pass_string, failure_message) {
+      try {
+        await fn(fn_arg);
+        assert(false);
+       }
+      catch(error)
+        {
+          if(error.toString().indexOf(pass_string) != -1) {
+            // console.log("We were expecting a Solidity throw (aka an revert exception), we got one. Test succeeded.");
+              return({assertFalseFlag: 0, message: ""});
+          } else {
+            if (error.name === 'AssertionError') {
+              // console.log("AssertionError found - " + failure_message);
+              return({assertFalseFlag: 1, message: failure_message});
+            }
+            else {
+              // if the error is something else (e.g., the assert from previous promise), then we fail the test
+              // console.log("some other error - " + failure_message);
+              return({assertFalseFlag: 1, message: "During ("+failure_message+")  Error:"+error.toString()});
+            };
+
+          };
+       };
+}
+
 contract('TheButton', (accounts) => {
   describe('Given that I have a TheButton Contract', () => {
     it('a new contract should have the expected initial balance', async () => {
@@ -12,18 +38,20 @@ contract('TheButton', (accounts) => {
 
     });
 
-    it('a new contract will not be created if not funded with an initial balance', () => {
-      TheButton.new({ from: accounts[0], value:0 }).then( (returnValue) => {
-              assert(false, "contract new was supposed to throw but didn't.");
-         }).catch(function(error) {
-          if(error.toString().indexOf("revert") != -1) {
-             // console.log("We were expecting a Solidity throw (aka an revert exception), we got one. Test succeeded.");
-             assert(true);
-           } else {
-             // if the error is something else (e.g., the assert from previous promise), then we fail the test
-             assert(false, error.toString());
-           }
-         });
+    it('a new contract will not be created if not funded with an initial balance', async () => {
+
+      let {assertFalseFlag, message} =
+        await catchErrorString ( TheButton.new,
+                                 { from: accounts[0], value:0 },
+                                 "revert" ,
+                                 "contract new with value 0 supposed to cause revert, but did not." );
+
+      if (assertFalseFlag == 1) {
+        assert(false, message);
+      }
+      else {
+        assert(true);
+      };
 
     });
 
@@ -42,20 +70,15 @@ contract('TheButton', (accounts) => {
     it('a new, pressed contract (with the wrong stakes) will have the correct balance', async () => {
       const the_button = await TheButton.new({ from: accounts[0], value:web3.toWei(1, "ether") });
 
-      try {
-        await the_button.pressButton({ from: accounts[1], value:web3.toWei(2, "ether"), gas:500000 });
-        assert(false, "contract new was supposed to throw but didn't.");
-       }
-      catch(error)
-        {
-          if(error.toString().indexOf("revert") != -1) {
-            // console.log("We were expecting a Solidity throw (aka an revert exception), we got one. Test succeeded.");
-          } else {
-             // if the error is something else (e.g., the assert from previous promise), then we fail the test
-             console.log("some other error");
-             assert(false, error.toString());
-           }
-         };
+      let {assertFalseFlag, message} =
+        await catchErrorString ( the_button.pressButton,
+                                 { from: accounts[1], value:web3.toWei(2, "ether"), gas:500000 },
+                                 "revert" ,
+                                 "press with invalid stakes was supposed to cause revert, but did not." );
+
+      if (assertFalseFlag == 1) {
+        assert(false, message);
+      };
 
       const bal2 = await the_button.contract._eth.getBalance(the_button.address);
       assert(bal2.toNumber() == web3.toWei(1, "ether"));
@@ -75,46 +98,27 @@ contract('TheButton', (accounts) => {
       await the_button_helper.incrementBlock(); // block 2
 
       // TEST 1: claim before three additional blocks will fail
-      try {
-        await the_button.claimTreasure({ from: accounts[2]});
-        assert(false); // error message below
-      }
-      catch (error) {
-        if(error.toString().indexOf("revert") != -1) {
-          // console.log("We were expecting a Solidity throw (aka an revert exception), we got one. Test succeeded.");
-        } else {
-           if (error.name === 'AssertionError') {
-              assert(false, "claimTreasure (after only two additional blocks mined) did not fail");
-             }
-           else {
-             // if the error is something else (e.g., the assert from previous promise), then we fail the test
-             console.log("some other error - only two blocks mined test");
-             assert(false, error.toString());
-          };
-        }
+      var {assertFalseFlag, message} =
+        await catchErrorString ( the_button.claimTreasure,
+                                 { from: accounts[2]},
+                                 "revert" ,
+                                 "claimTreasure (after only two additional blocks mined) did not fail");
+
+      if (assertFalseFlag == 1) {
+        assert(false, message);
       };
 
       await the_button_helper.incrementBlock(); // block 3
 
+      // TEST 2 : even after three blocks, an address other than last pressor will not be able to claim
+      var {assertFalseFlag, message} =
+        await catchErrorString ( the_button.claimTreasure,
+                                 { from: accounts[1]},
+                                 "revert" ,
+                                 "claimTreasure (by the incorrect address; after 3 blocks mined) did not fail");
 
-      // TEST 2 : an address other than last pressor will not be able to claim
-      try {
-        await the_button.claimTreasure({ from: accounts[1]});
-        assert(false); // error message below
-      }
-      catch (error) {
-        if(error.toString().indexOf("revert") != -1) {
-          // console.log("We were expecting a Solidity throw (aka an revert exception), we got one. Test succeeded.");
-        } else {
-           if (error.name === 'AssertionError') {
-             assert(false, "claimTreasure (by the incorrect address; after 3 blocks mined) did not fail");
-             }
-           else {
-              // if the error is something else (e.g., the assert from previous promise), then we fail the test
-              console.log("some other error - incorrect address test");
-              assert(false, error.toString());
-            };
-        }
+      if (assertFalseFlag == 1) {
+        assert(false, message);
       };
 
       // TEST 3 : only the last pressor can claim successfully
