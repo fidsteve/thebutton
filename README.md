@@ -37,12 +37,11 @@ Caveat: for ease the contract was tested in Remix
 
  > Expected Result: ether for this address increases by 4 
 
-###Unit Tests (TODO)
+###Unit Tests 
+to run, use: `truffle test`
 
-1. testCreateTheButton
-2. testCreateTheButtonFail
-3. testPressButton
-4. testPressButtonFail
-5. testClaimTreasure
-6. testClaimTreasureFailWrongBlockCount
-7. testClaimTreasureFailAddress
+1. a new contract should have the expected initial balance 
+1. a new contract will not be created if not funded with an initial balance
+1. a new, pressed contract will have the correct balance 
+1. a new, pressed contract (with the wrong stakes) will have the correct balance 
+1. a new, pressed contract, can only be claimed by the last pressor, after three blocks have been mined 
